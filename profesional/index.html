@@ -1,0 +1,653 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0E1116">
+<title>Espejo Profesional</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Concepto: tablero de formación nocturno, misma familia que Translog Diario — barra de estado arriba, franja de KPIs, pestañas con subrayado naranja, tablas densas y laboratorio de voz con vúmetro */
+:root{
+  --bg:#0E1116; --panel:#161B22; --panel2:#1C232D; --line:#2A323D;
+  --fg:#E8ECF1; --muted:#8C97A6; --accent:#F47A20; --accent-ink:#1A0D02; --accent-soft:rgba(244,122,32,.14);
+  --ok:#3FB98A; --warn:#E3B341; --bad:#F0605D; --c2:#5AA9E6; --c3:#A98BE8; --grid:rgba(140,151,166,.18);
+  --f-display:"Barlow Semi Condensed","Arial Narrow",Arial,sans-serif;
+  --f-body:"Barlow","Segoe UI",Roboto,Arial,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]){
+  --bg:#F4F5F7; --panel:#FFFFFF; --panel2:#F0F2F5; --line:#DCE0E6;
+  --fg:#141920; --muted:#5B6676; --accent:#D9650F; --accent-ink:#FFFFFF; --accent-soft:rgba(217,101,15,.10);
+  --ok:#1E8E62; --warn:#A6750B; --bad:#C93C39; --c2:#2F7FC1; --c3:#7357C7; --grid:rgba(91,102,118,.16);
+  color-scheme:light}}
+:root[data-theme="light"]{
+  --bg:#F4F5F7; --panel:#FFFFFF; --panel2:#F0F2F5; --line:#DCE0E6;
+  --fg:#141920; --muted:#5B6676; --accent:#D9650F; --accent-ink:#FFFFFF; --accent-soft:rgba(217,101,15,.10);
+  --ok:#1E8E62; --warn:#A6750B; --bad:#C93C39; --c2:#2F7FC1; --c3:#7357C7; --grid:rgba(91,102,118,.16);
+  color-scheme:light}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:14.5px;line-height:1.5}
+.tl{max-width:1180px;margin:0 auto;padding-block:20px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;grid-template-columns:minmax(0,1fr);gap:18px}
+h1,h2,h3{font-family:var(--f-display);font-weight:600;margin:0;text-wrap:balance;letter-spacing:.01em}
+h1{font-size:clamp(26px,3.4vw,36px);line-height:1.05}
+h2{font-size:20px} h3{font-size:16px}
+p{margin:0}
+.muted{color:var(--muted)} .small{font-size:13px}
+.mono{font-family:var(--f-mono);font-size:12px}
+button{font:inherit;color:inherit}
+a{color:var(--c2)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.eyebrow{font-family:var(--f-display);text-transform:uppercase;letter-spacing:.14em;font-size:12px;color:var(--accent);font-weight:600}
+
+/* Encabezado */
+.head{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:end;justify-content:space-between}
+.head .sub{color:var(--muted);font-size:13.5px;margin-top:4px;max-width:62ch}
+.ctrls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.status{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:13px;min-width:0}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--muted);flex:none}
+.dot.ok{background:var(--ok);box-shadow:0 0 0 3px color-mix(in srgb,var(--ok) 25%,transparent)}
+.dot.warn{background:var(--warn)} .dot.bad{background:var(--bad)}
+.ibtn{display:inline-flex;align-items:center;gap:7px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 12px;cursor:pointer;font-size:13px;min-height:38px}
+.ibtn svg{width:16px;height:16px;flex:none}
+.ibtn[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
+.zen{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:4px 6px 4px 4px}
+.zen .ibtn{border:0;background:transparent;min-height:30px;padding:4px 8px}
+.zen input[type=range]{width:90px;accent-color:var(--accent)}
+.eq{display:inline-flex;gap:2px;align-items:end;height:12px}
+.eq i{width:2px;background:currentColor;border-radius:1px;height:30%}
+.zen.on .eq i{animation:eq 1.6s ease-in-out infinite}
+.zen.on .eq i:nth-child(2){animation-delay:.3s} .zen.on .eq i:nth-child(3){animation-delay:.7s} .zen.on .eq i:nth-child(4){animation-delay:1.1s}
+@keyframes eq{0%,100%{height:25%}50%{height:100%}}
+
+/* KPIs */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.kpi{background:var(--panel);padding:14px 16px;display:grid;gap:2px;align-content:start;min-width:0}
+.kpi .l{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-family:var(--f-display);font-weight:500}
+.kpi .v{font-family:var(--f-display);font-weight:600;font-size:clamp(22px,2.3vw,30px);font-variant-numeric:tabular-nums;line-height:1.1;white-space:nowrap}
+.kpi .d{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.kpi.hl .v{color:var(--accent)}
+.mini{height:4px;border-radius:2px;background:var(--panel2);overflow:hidden;margin-top:6px}
+.mini i{display:block;height:100%;background:var(--accent);transform-origin:left;animation:grow .9s cubic-bezier(.2,.9,.3,1) both}
+@keyframes grow{from{transform:scaleX(0)}}
+
+/* Pestañas */
+.tabs{display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid var(--line)}
+.tab{background:none;border:0;color:var(--muted);padding:10px 14px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;font-family:var(--f-display);font-size:15px;font-weight:600;letter-spacing:.02em}
+.tab[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--accent)}
+.tab .n{font-family:var(--f-mono);font-size:11px;background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:1px 7px;margin-left:6px;color:var(--muted)}
+.page{display:grid;grid-template-columns:minmax(0,1fr);gap:16px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;display:grid;grid-template-columns:minmax(0,1fr);gap:12px;align-content:start;min-width:0}
+.card .note{font-size:13px;color:var(--muted);line-height:1.45;max-width:75ch}
+.card-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.lead{background:linear-gradient(180deg,var(--accent-soft),transparent 70%),var(--panel);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:12px;padding:16px;display:grid;gap:10px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;background:var(--accent);color:var(--accent-ink);border:0;border-radius:8px;padding:10px 16px;font-weight:600;cursor:pointer;min-height:40px}
+.btn svg{width:15px;height:15px}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.btn.ghost{background:transparent;color:var(--fg);border:1px solid var(--line)}
+.btn.ghost:hover{border-color:var(--accent)}
+.btn.sm{padding:6px 11px;min-height:32px;font-size:13px}
+.btn.danger{background:transparent;color:var(--bad);border:1px solid color-mix(in srgb,var(--bad) 50%,transparent)}
+.btn.danger.solid{background:var(--bad);color:#fff}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.row.between{justify-content:space-between}
+.pill{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font-size:13px}
+.pill::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--muted);flex:none}
+.pill.ok::before{background:var(--ok)} .pill.warn::before{background:var(--warn)} .pill.bad::before{background:var(--bad)} .pill.c2::before{background:var(--c2)}
+.tag{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);background:var(--panel2);border-radius:999px;padding:1px 8px;color:var(--muted);white-space:nowrap}
+.tag.voz{color:var(--c3);border-color:color-mix(in srgb,var(--c3) 45%,transparent)}
+.tag.esp{color:var(--c2);border-color:color-mix(in srgb,var(--c2) 45%,transparent)}
+
+/* Lista de módulos */
+.mods{display:grid;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.mod{display:grid;grid-template-columns:40px minmax(0,1fr) 150px 120px 70px 96px;gap:12px;align-items:center;padding:10px 12px;border-top:1px solid var(--line);background:var(--panel)}
+.mod:first-child{border-top:0}
+.mod.hd{background:var(--panel2);font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:600;padding-block:8px}
+.mod .num{font-family:var(--f-mono);color:var(--muted);font-size:12px}
+.mod .t b{display:block;font-weight:600}
+.mod .t span{display:flex;gap:6px;flex-wrap:wrap;margin-top:3px}
+.mod .sc{font-family:var(--f-mono);font-size:13px;text-align:right}
+.mod.locked{opacity:.55}
+.mod.cur{background:color-mix(in srgb,var(--accent) 7%,var(--panel))}
+@media (max-width:760px){.mod{grid-template-columns:32px minmax(0,1fr) auto}.mod .cp,.mod .sc,.mod.hd{display:none}.mod .st{grid-column:2}.mod .ac{grid-column:3;grid-row:1/span 2}}
+
+/* Módulo */
+.crumb{font-size:13px;color:var(--muted);display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.crumb button{background:none;border:0;color:var(--c2);cursor:pointer;padding:0}
+.stepper{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.stp{display:grid;gap:6px;font-size:12.5px;color:var(--muted);text-align:left;background:none;border:0;padding:0;cursor:default}
+.stp i{display:block;height:4px;border-radius:2px;background:var(--panel2);overflow:hidden}
+.stp i::after{content:"";display:block;height:100%;width:0;background:var(--accent);transition:width .5s}
+.stp.done i::after,.stp.on i::after{width:100%}
+.stp.on{color:var(--fg);font-weight:600}
+.stp b{font-family:var(--f-mono);font-weight:500;margin-right:4px}
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:640px){.cmp{grid-template-columns:1fr}}
+.opt,.ck{display:flex;gap:12px;align-items:flex-start;width:100%;text-align:left;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px 14px;cursor:pointer;transition:border-color .15s,background .15s}
+.opt:hover:not([disabled]),.ck:hover{border-color:color-mix(in srgb,var(--accent) 60%,var(--line))}
+.opt .k{flex:none;font-family:var(--f-mono);font-size:12px;border:1px solid var(--line);border-radius:6px;padding:1px 7px;color:var(--muted)}
+.opt[disabled]{cursor:default}
+.opt.right{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 10%,var(--panel2))}
+.opt.wrong{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 8%,var(--panel2))}
+.verd{display:block;font-family:var(--f-display);font-weight:600;font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:2px}
+.opt.right .verd{color:var(--ok)} .opt.wrong .verd{color:var(--bad)}
+.ck .box{flex:none;width:20px;height:20px;border-radius:5px;border:1.5px solid var(--muted);display:grid;place-items:center;margin-top:1px;transition:all .15s}
+.ck .box svg{width:13px;height:13px;opacity:0}
+.ck[aria-pressed="true"]{border-color:var(--ok)}
+.ck[aria-pressed="true"] .box{background:var(--ok);border-color:var(--ok);color:#fff}
+.ck[aria-pressed="true"] .box svg{opacity:1}
+.prompt{background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--c2);border-radius:8px;padding:12px 14px;white-space:pre-wrap;font-size:14px}
+.prompt.voz{border-left-color:var(--c3)}
+ol.todo{list-style:none;margin:0;padding:0;display:grid;gap:16px}
+ol.todo li{display:grid;grid-template-columns:28px 1fr;gap:12px}
+ol.todo .n{width:26px;height:26px;border-radius:50%;border:1.5px solid var(--line);display:grid;place-items:center;font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+ol.todo li.done .n{background:var(--ok);border-color:var(--ok);color:#fff}
+ol.todo .b{display:grid;gap:8px;min-width:0}
+.apps{display:flex;flex-wrap:wrap;gap:8px}
+.app{display:inline-flex;align-items:center;gap:8px;background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:13px;text-decoration:none;color:var(--fg)}
+.app:hover{border-color:var(--accent)}
+.app.sel{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 12%,var(--panel2))}
+.app .mic{color:var(--c3);font-family:var(--f-mono);font-size:10.5px}
+.app .dt{width:8px;height:8px;border-radius:50%;background:var(--dc)}
+textarea,input[type=text]{font:inherit;width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--fg);border-radius:8px;padding:10px 12px}
+textarea{min-height:120px;resize:vertical}
+textarea:focus,input[type=text]:focus{outline:none;border-color:var(--accent)}
+.tip{font-size:13px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+.tip b{color:var(--accent)}
+.meter4{display:flex;gap:4px}
+.meter4 i{flex:1;height:6px;border-radius:3px;background:var(--panel2);border:1px solid var(--line)}
+.meter4 i.on{background:var(--ok);border-color:var(--ok)}
+.result{display:grid;grid-template-columns:auto 1fr;gap:20px;align-items:center}
+@media (max-width:560px){.result{grid-template-columns:1fr;justify-items:start}}
+.ring{width:132px;height:132px;position:relative}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring .v{stroke-dasharray:326.7;stroke-dashoffset:var(--off);animation:rf 1.1s cubic-bezier(.2,.9,.3,1) both}
+@keyframes rf{from{stroke-dashoffset:326.7}}
+.ring .lab{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--f-display);font-weight:600;font-size:30px;font-variant-numeric:tabular-nums}
+
+/* Laboratorio de voz */
+.vu{display:grid;grid-template-columns:repeat(32,1fr);gap:3px;height:56px;align-items:end;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px}
+.vu i{display:block;height:100%;border-radius:2px;background:var(--line);transition:background .06s}
+.vu i.g{background:var(--ok)} .vu i.y{background:var(--warn)} .vu i.r{background:var(--bad)}
+.wave{max-width:100%;min-width:0;width:100%;height:72px;display:block;background:var(--panel2);border:1px solid var(--line);border-radius:8px}
+.readout{display:flex;gap:18px;flex-wrap:wrap;font-family:var(--f-mono);font-size:12.5px;color:var(--muted)}
+.readout b{color:var(--fg);font-weight:500}
+#mst{white-space:normal;align-items:flex-start}
+#mst::before{margin-top:6px}
+.rec{width:10px;height:10px;border-radius:50%;background:var(--bad);display:inline-block;animation:blink 1.1s infinite}
+@keyframes blink{50%{opacity:.25}}
+
+/* Tablas */
+.tw{overflow:auto;border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric:tabular-nums;min-width:560px}
+th{position:sticky;top:0;background:var(--panel2);text-align:left;color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.04em;padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:0}
+td.num{text-align:right;font-family:var(--f-mono);font-size:12.5px}
+
+/* Gráficos */
+.radar{width:100%;max-width:440px;height:auto;display:block;margin:0 auto}
+.radar text{fill:var(--muted);font-size:11px;font-family:var(--f-body)}
+.radar .shape{transform-box:view-box;transform-origin:170px 150px;animation:pop .8s cubic-bezier(.2,.9,.3,1.2) both}
+@keyframes pop{from{transform:scale(.4);opacity:.3}}
+.hbars{display:grid;gap:9px}
+.hb{display:grid;grid-template-columns:150px 1fr 44px;gap:10px;align-items:center;font-size:13px}
+.hb .tr{height:10px;border-radius:3px;background:var(--panel2);overflow:hidden}
+.hb .tr i{display:block;height:100%;background:var(--accent);transform-origin:left;animation:grow 1s cubic-bezier(.2,.9,.3,1) both}
+.hb .n{text-align:right;font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+@media (max-width:480px){.hb{grid-template-columns:110px 1fr 40px}}
+.legal{border-top:1px solid var(--line);padding-top:14px;display:grid;gap:6px;font-size:12px;color:var(--muted);line-height:1.5}
+.legal p{max-width:120ch}
+.reg{max-width:560px;margin:4vh auto 0;width:100%}
+.radios{display:grid;gap:8px}
+.radio{display:flex;gap:10px;align-items:flex-start;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer}
+.radio input{margin-top:3px;accent-color:var(--accent)}
+.radio:has(input:checked){border-color:var(--accent)}
+.confirm{display:inline-flex;gap:6px;flex-wrap:wrap;align-items:center}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:40;background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--accent);color:var(--fg);padding:10px 16px;border-radius:8px;font-size:13.5px;box-shadow:0 10px 30px rgba(0,0,0,.3);max-width:calc(100vw - 32px)}
+.enter{animation:in .35s ease-out both}
+@keyframes in{from{transform:translateY(8px);opacity:.4}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+
+<div class="tl" id="root"></div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+(function(){
+const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+const COMP={pedir:"Pedir claro",contexto:"Dar contexto",iterar:"Iterar",verificar:"Verificar",datos:"Proteger datos",elegir:"Elegir herramienta",voz:"Comunicar por voz"};
+const APPS=[
+  {id:"claude",n:"Claude",co:"Anthropic · EE.UU.",u:"https://claude.ai",c:"#F47A20",voz:true},
+  {id:"chatgpt",n:"ChatGPT",co:"OpenAI · EE.UU.",u:"https://chatgpt.com",c:"#3FB98A",voz:true},
+  {id:"gemini",n:"Gemini",co:"Google · EE.UU.",u:"https://gemini.google.com",c:"#5AA9E6",voz:true},
+  {id:"grok",n:"Grok",co:"xAI · EE.UU.",u:"https://grok.com",c:"#8C97A6",voz:true},
+  {id:"deepseek",n:"DeepSeek",co:"DeepSeek · China",u:"https://chat.deepseek.com",c:"#A98BE8",voz:false}
+];
+const VOZ=[
+  {ia:"ChatGPT",f:"Modo de voz",d:"App móvil y web",e:"Disponible",src:"https://beginnersinai.org/ai-voice-modes-compared-2026/"},
+  {ia:"Gemini",f:"Gemini Live, en español",d:"App Android e iOS",e:"Disponible",src:"https://www.xatakandroid.com/aplicaciones-android/ahora-gemini-live-llega-espana-puedes-conversar-viva-voz-asistente-futuro-espanol"},
+  {ia:"Claude",f:"Modo de voz",d:"Apps móviles y claude.ai",e:"Disponible",src:"https://beginnersinai.org/ai-voice-modes-compared-2026/"},
+  {ia:"Grok",f:"Modo de voz",d:"App iOS y Android",e:"Disponible",src:"https://beginnersinai.org/ai-voice-modes-compared-2026/"},
+  {ia:"DeepSeek",f:"Respuestas por voz en prueba para algunos usuarios",d:"Usar el dictado del teclado",e:"Por confirmar",src:"https://www.neoteo.com/en/deepseek-tests-voice-replies-and-four-profiles-for-some-app-users"}
+];
+const LEVELS=[{n:1,t:"Fundamentos"},{n:2,t:"Uso diario"},{n:3,t:"Criterio avanzado"}];
+const M=[
+ {id:"m01",lv:1,c:"pedir",t:"Primer contacto con una IA",s:"Abra una IA y pídale que explique, en lenguaje simple, qué puede hacer por usted.",
+  bad:"hola",good:"Hola. Explícame en 5 líneas qué cosas puedes hacer por mí en el día a día. Usa palabras simples, sin términos técnicos.",
+  p:"Hola. Explícame en 5 líneas qué cosas puedes hacer por mí en el día a día. Usa palabras simples, sin términos técnicos.",
+  ck:["La respuesta tenía más o menos 5 líneas","Entendí todas las palabras","Obtuve al menos una idea aplicable esta semana","Hice una segunda pregunta de seguimiento"],tip:"La calidad de la respuesta depende de la claridad del pedido."},
+ {id:"m02",lv:1,c:"contexto",t:"Pedido con contexto",s:"Solicite una receta con los ingredientes disponibles. El resultado depende del contexto que entregue.",
+  bad:"dame una receta",good:"Tengo arroz, 3 huevos, una cebolla, un tomate y queso. Somos 2 personas y tengo 30 minutos. Dame una receta fácil paso a paso.",
+  p:"Tengo [ingredientes]. Somos [número] personas y tengo [minutos] minutos. Dame una receta fácil, paso a paso, usando solo lo que tengo.",
+  ck:["Reemplacé los campos entre [corchetes]","La receta usa solo lo indicado","Los pasos están numerados y claros","Respetó el tiempo indicado"],tip:"Los [corchetes] indican datos que usted debe completar."},
+ {id:"v02",lv:1,c:"voz",voz:true,t:"Dictado con el teclado",s:"Use el micrófono del teclado del teléfono para dictar su pedido. Funciona con cualquier IA, incluida DeepSeek.",
+  bad:"Escribir a mano un texto largo en el teléfono.",good:"Tocar el micrófono del teclado, dictar con calma y revisar el texto antes de enviar.",
+  p:"Dicta (no escribas): «Necesito escribir un correo breve para avisar que llegaré 15 minutos tarde a una reunión. Dame dos versiones, una formal y una cercana.»",
+  ck:["Usé el micrófono del teclado","Revisé y corregí el texto dictado antes de enviar","La IA entendió el pedido","Utilicé una de las versiones"],tip:"El dictado confunde nombres y cifras. Revíselos siempre antes de enviar."},
+ {id:"m03",lv:1,c:"iterar",t:"Iteración en dos vueltas",s:"La primera respuesta rara vez es la definitiva. Practique pedir ajustes en la misma conversación.",
+  bad:"Aceptar la primera versión aunque no sirva.",good:"Primero: «Escribe un saludo para mi tía Rosa, que cumple 70». Después: «Más corto, con humor y sin emojis».",
+  p:"Escribe un saludo de cumpleaños para [nombre], que cumple [edad] años. Es mi [relación].\n\n(Cuando responda, escribe en el mismo chat:)\nMás corto, con un toque de humor y sin emojis.",
+  ck:["Hice al menos 2 pedidos en el mismo chat","La segunda versión mejoró","El texto suena a algo que yo diría","Lo usaría realmente"],tip:"Dentro de una misma conversación la IA mantiene el contexto previo."},
+ {id:"m04",lv:1,c:"datos",t:"Protección de datos",s:"Revise con la IA qué información nunca debe ingresar. Responda el checklist con rigor.",
+  bad:"Pegar la foto del carnet, la clave del banco o datos de un cliente para «que ayude».",good:"Usar datos ficticios o eliminar datos personales antes de pegar un documento.",
+  p:"¿Qué tipo de datos personales no debería escribirte nunca, y por qué? Dame una lista corta y un ejemplo de cómo pedir ayuda con un documento sin mostrar mis datos.",
+  ck:["No ingreso claves, tarjetas ni cuentas bancarias","No ingreso RUT, carnet ni pasaporte","Anonimizo nombres y datos de terceros antes de pegar","Sé que lo escrito puede quedar almacenado por el proveedor"],tip:"Criterio práctico: si no lo diría en voz alta en un lugar público, no lo escriba en una IA."},
+ {id:"m05",lv:2,c:"contexto",t:"Plan con restricciones",s:"Pida un plan que respete participantes, presupuesto y preferencias.",
+  bad:"¿qué hago el fin de semana?",good:"Somos 4 adultos en Viña del Mar, presupuesto total $60.000, nos gusta caminar y comer bien. Propón un plan para el sábado con horarios y costo de cada parte.",
+  p:"Somos [quiénes y cuántos] en [ciudad]. Presupuesto total: $[monto]. Nos gusta [gustos]. Propón un plan para el [día] con horarios y costo aproximado de cada parte. Al final, suma el total.",
+  ck:["Indiqué quiénes, dónde, cuánto y preferencias","El plan respeta el presupuesto","Verifiqué que los lugares existen","Solicité al menos un ajuste"],tip:"Precios y horarios entregados por una IA pueden estar desactualizados."},
+ {id:"m06",lv:2,c:"verificar",t:"Verificación de fuentes",s:"Haga una consulta cotidiana y compruebe el origen de la respuesta.",
+  bad:"Aceptar la respuesta porque «suena segura».",good:"Preguntar, pedir la fuente y contrastarla.",
+  p:"¿Cada cuánto se recomienda cambiar el cepillo de dientes? Responde en 3 líneas y dime de qué fuente sale esa recomendación.",
+  ck:["La IA citó una fuente concreta","Busqué la fuente por mi cuenta","La fuente coincide con la respuesta","Entiendo que una IA puede equivocarse con seguridad"],tip:"En salud, finanzas o temas legales, la IA orienta pero no reemplaza a un profesional."},
+ {id:"v01",lv:2,c:"voz",voz:true,t:"Conversación por voz",s:"Use el modo de voz de una IA para conversar sin escribir. Disponible en ChatGPT, Gemini, Claude y Grok.",
+  bad:"Hablarle como a un buscador: «receta pollo».",good:"Usar frases completas y pedir respuestas breves: «Cocino para cuatro, ¿qué hago con pollo y arroz en 30 minutos? Respóndeme corto.»",
+  p:"Di en voz alta: «Hola. Estoy practicando el modo de voz. Hazme tres preguntas cortas para entender qué tipo de ayuda necesito en mi trabajo, una por una, y espera mi respuesta antes de seguir.»",
+  ck:["Activé el modo de voz, no el teclado","La IA me entendió o le pedí que repitiera","Logré interrumpirla o pedirle respuestas más cortas","Obtuve una respuesta útil"],tip:"En voz conviene pedir respuestas cortas: lo hablado se alarga rápido."},
+ {id:"m07",lv:2,c:"elegir",mir:true,t:"Prueba Espejo",s:"Haga la misma consulta en dos IAs distintas y compare ambas respuestas.",
+  bad:"Usar siempre una sola IA y asumir que todas responden igual.",good:"Contrastar dos IAs y quedarse con lo mejor de cada una.",
+  p:"Necesito regalar algo a una persona de 60 años que le gusta el jardín. Presupuesto $20.000. Dame 5 ideas concretas con precio aproximado.",
+  ck:["Usé dos IAs con el mismo texto","Encontré al menos una diferencia relevante","Identifiqué cuál respuesta sirvió más y por qué","Detecté algo que una dijo y la otra no"],tip:"Cada modelo fue entrenado distinto; compararlos es la forma más rápida de detectar errores."},
+ {id:"m08",lv:2,c:"pedir",t:"Resumen de un texto largo",s:"Copie una noticia o correo extenso (sin datos personales) y solicite un resumen accionable.",
+  bad:"resume esto",good:"Resume este texto en 3 puntos y dime si debo hacer algo.",
+  p:"Resume este texto en 3 puntos simples. Después dime si hay algo que yo deba hacer o decidir.\n\n[pega aquí el texto]",
+  ck:["Verifiqué que el texto no tuviera datos personales","El resumen tiene 3 puntos","El resumen no agregó información inexistente","Indicó claramente si había acciones"],tip:"Compare siempre el resumen con el original: las IAs pueden agregar contenido."},
+ {id:"m09",lv:3,c:"pedir",t:"Rol, tarea y formato",s:"Asigne un rol a la IA y exija un formato exacto, por ejemplo una tabla.",
+  bad:"ayúdame con mis gastos",good:"Actúa como asesor de finanzas familiares. Arma una tabla con 8 categorías de gastos del hogar, monto sugerido y un consejo de ahorro.",
+  p:"Actúa como [rol]. Necesito [tarea]. Entrégamelo como [formato: tabla / lista / pasos / correo], con [detalle de columnas o largo].",
+  ck:["Usé rol, tarea y formato","La respuesta respetó el formato","El rol cambió el tono","Llevé el resultado a otra herramienta"],tip:"Fórmula base: Rol + Contexto + Tarea + Formato."},
+ {id:"m10",lv:3,c:"verificar",mir:true,t:"Detección de alucinaciones",s:"Consulte por un libro inexistente en dos IAs y observe si alguna lo inventa.",
+  bad:"Asumir que un dato detallado es un dato verdadero.",good:"Desconfiar de detalles precisos que no puede comprobar.",
+  p:"Hazme un resumen del libro \"El faro de los relojes dormidos\" de la autora chilena Amparo Lezcano, publicado en 1987.",
+  ck:["Consulté en dos IAs","Alguna indicó no conocer el libro","Si alguna inventó un resumen, lo detecté","Entiendo qué es una alucinación"],tip:"Ese libro y esa autora no existen."},
+ {id:"v03",lv:3,c:"voz",voz:true,mir:true,t:"Prueba Espejo por voz",s:"Haga la misma pregunta hablada en dos IAs con modo de voz y compare el contenido.",
+  bad:"Evaluar una IA por lo agradable de su voz.",good:"Evaluar exactitud, claridad y brevedad de cada respuesta.",
+  p:"Pregunta en voz alta en dos IAs: «Explícame en un minuto qué es la inflación, con un ejemplo de la vida diaria en Chile.»",
+  ck:["Usé el modo de voz en dos IAs","Comparé exactitud y no solo la voz","Detecté si alguna dio datos dudosos","Sé cuál me sirve más para hablar"],tip:"Una voz convincente no garantiza datos correctos. Verifique las cifras."},
+ {id:"m11",lv:3,c:"elegir",t:"Información reciente",s:"Consulte por algo de esta semana y revise si la IA conoce la fecha y si busca en internet.",
+  bad:"Pedir noticias de hoy a una IA sin búsqueda web y creerle.",good:"Saber cuáles buscan en la web y activar esa función cuando corresponde.",
+  p:"¿Qué fecha es hoy y cuál es una noticia importante de Chile de esta semana? Dime si buscaste en internet para responder.",
+  ck:["Indicó la fecha correcta","Aclaró si buscó en internet","La noticia era efectivamente de esta semana","Sé dónde se activa la búsqueda web"],tip:"Los modelos aprenden hasta una fecha; para lo reciente necesitan buscar."},
+ {id:"m12",lv:3,c:"iterar",t:"Instrucción propia",s:"Redacte desde cero una instrucción para un problema real, úsela y mejórela una vez.",
+  bad:"Copiar siempre instrucciones de terceros.",good:"Escribir instrucciones propias con la fórmula y ajustarlas según el resultado.",
+  p:"Actúa como [rol].\nContexto: [tu situación real, sin datos personales].\nTarea: [lo que necesitas].\nFormato: [cómo lo quieres].",
+  ck:["Redacté la instrucción yo","La usé en una IA","La mejoré tras la primera respuesta","El resultado fue útil"],tip:"Guarde las instrucciones que funcionan: son activos reutilizables."}
+];
+const STEPS=["Ejemplo","Ejecución","Comparación","Evaluación"];
+const EXP=[["Sin experiencia","Nunca he usado una IA",1],["Uso ocasional","La he usado algunas veces",1],["Uso frecuente","La uso varias veces por semana",2]];
+const I={
+ check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+ play:'<svg viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg>',
+ sun:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg>',
+ moon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>',
+ copy:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2.5"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>',
+ mic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg>'
+};
+const VOZ_LINE="Modo de voz: ChatGPT, Gemini, Claude y Grok desde sus apps. En DeepSeek, use el micrófono del teclado.";
+
+/* ---------- Música zen generativa ---------- */
+const Zen={ctx:null,master:null,on:false,ducked:false,vol:.35,t:null,
+  build(){const A=window.AudioContext||window.webkitAudioContext;if(!A)return false;const c=this.ctx=new A();
+    this.master=c.createGain();this.master.gain.value=0;this.master.connect(c.destination);
+    const dl=c.createDelay(2);dl.delayTime.value=.46;const fb=c.createGain();fb.gain.value=.42;const lp=c.createBiquadFilter();lp.type="lowpass";lp.frequency.value=2000;
+    dl.connect(lp);lp.connect(fb);fb.connect(dl);lp.connect(this.master);this.send=c.createGain();this.send.gain.value=.55;this.send.connect(dl);
+    [110,164.81,220,277.18].forEach((f,i)=>{const o=c.createOscillator();o.type=i%2?"triangle":"sine";o.frequency.value=f;o.detune.value=(i-1.5)*5;
+      const pf=c.createBiquadFilter();pf.type="lowpass";pf.frequency.value=700;const g=c.createGain();g.gain.value=.05/(1+i*.5);
+      const l=c.createOscillator();l.frequency.value=.04+i*.025;const lg=c.createGain();lg.gain.value=.028/(1+i*.5);l.connect(lg);lg.connect(g.gain);
+      o.connect(pf);pf.connect(g);g.connect(this.master);g.connect(this.send);o.start();l.start();});
+    return true;},
+  level(){return this.on&&!this.ducked?this.vol:0;},
+  apply(sec){if(!this.ctx)return;const g=this.master.gain,n=this.ctx.currentTime;g.cancelScheduledValues(n);g.setValueAtTime(g.value,n);g.linearRampToValueAtTime(this.level(),n+(sec||1.5));},
+  start(){if(!this.ctx&&!this.build())return false;try{this.ctx.resume();}catch(e){}this.on=true;this.apply(2.5);clearTimeout(this.t);this.bell();return true;},
+  stop(){this.on=false;this.apply(1.2);clearTimeout(this.t);},
+  setVol(v){this.vol=v;this.apply(.3);try{localStorage.setItem("ep-zenvol",String(v));}catch(e){}},
+  duck(b){this.ducked=b;this.apply(.4);},
+  bell(){if(!this.on)return;const c=this.ctx,n=c.currentTime,sc=[440,493.88,554.37,659.25,739.99,880],f=sc[Math.floor(Math.random()*sc.length)];
+    [[f,.07],[f*2.01,.018],[f*3.02,.008]].forEach(([fr,a])=>{const o=c.createOscillator();o.type="sine";o.frequency.value=fr;const g=c.createGain();
+      g.gain.setValueAtTime(.0001,n);g.gain.exponentialRampToValueAtTime(a,n+.03);g.gain.exponentialRampToValueAtTime(.0001,n+4.5);o.connect(g);g.connect(this.master);g.connect(this.send);o.start(n);o.stop(n+4.6);});
+    this.t=setTimeout(()=>this.bell(),3500+Math.random()*5500);}
+};
+try{const v=parseFloat(localStorage.getItem("ep-zenvol"));if(v>=0&&v<=1)Zen.vol=v;}catch(e){}
+
+/* ---------- Micrófono ---------- */
+const Mic={stream:null,ctx:null,an:null,raf:0,peak:-90,
+  async start(){if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)return "unsupported";
+    try{this.stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}});}catch(e){return e&&e.name||"error";}
+    const A=window.AudioContext||window.webkitAudioContext;this.ctx=new A();const src=this.ctx.createMediaStreamSource(this.stream);
+    this.an=this.ctx.createAnalyser();this.an.fftSize=1024;src.connect(this.an);this.peak=-90;Zen.duck(true);this.loop();return null;},
+  loop(){const buf=new Float32Array(this.an.fftSize),cv=document.getElementById("wave"),vu=document.querySelectorAll("#vu i");
+    const draw=()=>{if(!this.an)return;this.an.getFloatTimeDomainData(buf);let s=0;for(let i=0;i<buf.length;i++)s+=buf[i]*buf[i];
+      const rms=Math.sqrt(s/buf.length),db=Math.max(-90,20*Math.log10(rms+1e-9));this.peak=Math.max(this.peak-.4,db);
+      const lv=Math.min(1,Math.max(0,(db+60)/60)),on=Math.round(lv*vu.length);
+      vu.forEach((x,i)=>{x.className=i<on?(i<vu.length*.65?"g":i<vu.length*.85?"y":"r"):"";});
+      const e=id=>document.getElementById(id);if(e("mdb"))e("mdb").textContent=db.toFixed(1)+" dBFS";if(e("mpk"))e("mpk").textContent=this.peak.toFixed(1)+" dBFS";
+      if(e("mst")){const st=db<-50?["bad","Sin voz detectada. Acérquese al micrófono o hable más fuerte."]:db>-8?["warn","Nivel muy alto. Aléjese un poco."]:["ok","Nivel correcto."];e("mst").className="pill "+st[0];e("mst").textContent=st[1];}
+      if(cv){const w=cv.width=cv.clientWidth*(window.devicePixelRatio||1),h=cv.height=cv.clientHeight*(window.devicePixelRatio||1),x=cv.getContext("2d");
+        x.clearRect(0,0,w,h);x.strokeStyle=getComputedStyle(document.documentElement).getPropertyValue("--accent");x.lineWidth=2*(window.devicePixelRatio||1);x.beginPath();
+        for(let i=0;i<buf.length;i+=4){const px=i/buf.length*w,py=h/2+buf[i]*h*1.6;i?x.lineTo(px,py):x.moveTo(px,py);}x.stroke();}
+      this.raf=requestAnimationFrame(draw);};draw();},
+  stop(){cancelAnimationFrame(this.raf);if(this.stream)this.stream.getTracks().forEach(t=>t.stop());this.stream=null;if(this.ctx)try{this.ctx.close();}catch(e){}this.ctx=null;this.an=null;Zen.duck(false);},
+  get active(){return !!this.an;}
+};
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+const Dict={rec:null,final:"",
+  start(){if(!SR)return "unsupported";const r=this.rec=new SR();r.lang="es-CL";r.interimResults=true;r.continuous=true;this.final=(document.getElementById("dtx")||{}).value||"";
+    if(this.final&&!this.final.endsWith(" "))this.final+=" ";
+    r.onresult=e=>{let tmp="";for(let i=e.resultIndex;i<e.results.length;i++){const t=e.results[i][0].transcript;if(e.results[i].isFinal)this.final+=t+" ";else tmp+=t;}
+      const el=document.getElementById("dtx");if(el){el.value=this.final+tmp;}const wc=document.getElementById("dwc");if(wc)wc.textContent=String((this.final+tmp).trim().split(/\s+/).filter(Boolean).length);};
+    r.onerror=e=>{toast(e.error==="not-allowed"||e.error==="service-not-allowed"?"El navegador no permite usar el micrófono en esta vista.":"El dictado se detuvo: "+e.error);};
+    r.onend=()=>{this.rec=null;Zen.duck(Mic.active);paintDict();};
+    try{r.start();Zen.duck(true);}catch(e){this.rec=null;return "error";}return null;},
+  stop(){if(this.rec)try{this.rec.stop();}catch(e){}}
+};
+
+/* ---------- Estado ---------- */
+const KEY="espejo-pro-v1",DAY=86400000;
+let S={perfil:null,res:{},dias:[],voz:{mic:0,dict:0},actualizado:0};
+let tab="programa",cur=null,step=0,draft={},reg={exp:null,ok:false,nombre:""},ask=null,last=null;
+let family=[],isOwner=false,mode="local",docRef=null,dbRef=null,myId=null,saving=Promise.resolve();
+try{const raw=localStorage.getItem(KEY);if(raw)S=Object.assign(S,JSON.parse(raw));}catch(e){}
+try{const t=localStorage.getItem("ep-tema");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}
+const $=s=>document.querySelector(s);
+const esc=t=>String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fmt=n=>n.toLocaleString("es-CL");
+function toast(t){const el=$("#toast");el.textContent=t;el.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>el.hidden=true,2800);}
+function persist(){S.actualizado=Date.now();try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}
+  if(docRef){const d=JSON.parse(JSON.stringify(S)),r=docRef;saving=saving.then(()=>r.set(d)).then(()=>{mode="compartido";}).catch(()=>{mode="local";});}}
+const dayKey=d=>{const x=new Date(d);return x.getFullYear()+"-"+String(x.getMonth()+1).padStart(2,"0")+"-"+String(x.getDate()).padStart(2,"0");};
+function streakOf(s){const set=new Set(s.dias||[]);const d=new Date();if(!set.has(dayKey(d)))d.setDate(d.getDate()-1);let n=0;while(set.has(dayKey(d))){n++;d.setDate(d.getDate()-1);}return n;}
+const okOf=(s,id)=>!!(s.res&&s.res[id]&&s.res[id].ok);
+const okCount=s=>M.filter(m=>okOf(s,m.id)).length;
+const avgOf=s=>{const r=Object.values(s.res||{});return r.length?Math.round(r.reduce((a,x)=>a+x.score,0)/(r.length*4)*100):0;};
+const appsOf=s=>{const a=new Set();Object.values(s.res||{}).forEach(r=>(r.apps||[]).forEach(x=>a.add(x)));return a;};
+const vozOf=s=>M.filter(m=>m.voz&&okOf(s,m.id)).length;
+function unlocked(s,lv){if(!s.perfil)return false;if(lv<=s.perfil.nivel)return true;const p=M.filter(m=>m.lv===lv-1);return p.filter(m=>okOf(s,m.id)).length>=Math.ceil(p.length*.75);}
+function statusOf(m){const r=S.res[m.id];if(!r)return "new";if(r.ok&&(!r.repaso||r.repaso>Date.now()))return "ok";return "rep";}
+const nextM=()=>M.find(m=>unlocked(S,m.lv)&&statusOf(m)==="rep")||M.find(m=>unlocked(S,m.lv)&&statusOf(m)==="new");
+function comp(res){const o={};Object.keys(COMP).forEach(k=>{const ms=M.filter(m=>m.c===k);o[k]=Math.round(ms.reduce((a,m)=>a+(res&&res[m.id]?res[m.id].score:0),0)/(ms.length*4)*100);});return o;}
+const isDark=()=>getComputedStyle(document.documentElement).getPropertyValue("--bg").trim().toUpperCase()==="#0E1116";
+
+/* ---------- Vistas ---------- */
+function vHead(){
+  const dark=isDark(),z=Zen.on;
+  const zen=`<div class="zen ${z?"on":""}"><button class="ibtn" data-act="zen" aria-pressed="${z}"><span class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span>Música zen ${z?"activa":"apagada"}</button>
+    ${z?`<input type="range" id="zvol" min="0" max="1" step="0.05" value="${Zen.vol}" aria-label="Volumen de la música">`:""}</div>`;
+  return `<header class="head"><div><p class="eyebrow">Programa de formación · IA aplicada</p><h1>Método Espejo</h1>
+    <p class="sub">Práctica guiada para usar Claude, ChatGPT, Gemini, Grok y DeepSeek con criterio: por escrito y por voz.</p></div>
+    <div class="ctrls">${S.perfil?`<div class="status"><span class="dot ${mode==="compartido"?"ok":"warn"}"></span><span>${esc(S.perfil.nombre)}</span><span class="muted">${mode==="compartido"?"Registro del equipo":"Registro en este equipo"}</span></div>`:""}
+      ${zen}<button class="ibtn" data-act="tema" aria-label="${dark?"Cambiar a modo claro":"Cambiar a modo oscuro"}">${dark?I.sun:I.moon}</button></div></header>`;
+}
+function vKpis(){
+  const ok=okCount(S),avg=avgOf(S),apps=appsOf(S).size,vz=vozOf(S),dias=new Set(S.dias||[]).size,st=streakOf(S);
+  const k=(l,v,d,p,hl)=>`<div class="kpi ${hl?"hl":""}"><span class="l">${l}</span><span class="v">${v}</span><span class="d">${d}</span>${p!=null?`<div class="mini"><i style="width:${p}%"></i></div>`:""}</div>`;
+  return `<section class="kpis" aria-label="Indicadores">
+    ${k("Módulos completados",`${ok}<span class="muted" style="font-size:.55em"> / ${M.length}</span>`,`${Math.round(ok/M.length*100)}% del programa`,ok/M.length*100,true)}
+    ${k("Puntaje promedio",`${avg}%`,Object.keys(S.res).length?`${Object.keys(S.res).length} evaluaciones`:"Sin evaluaciones",avg)}
+    ${k("IAs utilizadas",`${apps}<span class="muted" style="font-size:.55em"> / 5</span>`,"Meta: probar las cinco",apps/5*100)}
+    ${k("Módulos de voz",`${vz}<span class="muted" style="font-size:.55em"> / 3</span>`,`${(S.voz&&S.voz.mic)||0} pruebas de micrófono`,vz/3*100)}
+    ${k("Días de práctica",fmt(dias),st?`Racha actual: ${st} ${st===1?"día":"días"}`:"Sin racha activa",null)}
+  </section>`;
+}
+function vTabs(){const t=[["programa","Programa",okCount(S)+"/"+M.length],["voz","Laboratorio de voz",null],["progreso","Progreso",null],["ref","Referencia",null]];
+  if(isOwner)t.push(["equipo","Equipo",family.length]);
+  return `<nav class="tabs" role="tablist">${t.map(([k,n,c])=>`<button class="tab" role="tab" data-tab="${k}" aria-selected="${tab===k||(tab==="modulo"&&k==="programa")}">${n}${c!=null?`<span class="n">${c}</span>`:""}</button>`).join("")}</nav>`;}
+
+function vRegistro(){
+  return `<section class="card reg enter"><p class="eyebrow">Registro</p><h2>Comience el programa</h2>
+    <p class="note">Quince módulos prácticos de 10 a 15 minutos, en tres niveles. Cada módulo se ejecuta en una IA real y se evalúa con un checklist.</p>
+    <label for="rname" class="small muted">Nombre</label><input type="text" id="rname" maxlength="40" value="${esc(reg.nombre)}" autocomplete="name">
+    <p class="small muted">Experiencia con IA</p>
+    <div class="radios">${EXP.map(([t,d],i)=>`<label class="radio"><input type="radio" name="exp" value="${i}" ${reg.exp===i?"checked":""}><span><b>${t}</b><br><span class="muted small">${d}</span></span></label>`).join("")}</div>
+    <label class="radio"><input type="checkbox" id="rok" ${reg.ok?"checked":""}><span class="small">Entiendo que no debo ingresar en ninguna IA claves, datos bancarios, documentos de identidad ni información de clientes o terceros.</span></label>
+    <div class="row"><button class="btn" data-act="registrar">Comenzar programa</button></div>
+  </section>`;
+}
+function vPrograma(){
+  const nx=nextM();
+  const lead=nx?`<section class="lead enter"><div class="row between"><div><p class="eyebrow">Siguiente módulo</p><h2>${esc(nx.t)}</h2><p class="note">${esc(nx.s)}</p></div>
+    <button class="btn" data-m="${nx.id}">${statusOf(nx)==="rep"?"Repasar":"Iniciar"} ${I.play}</button></div></section>`
+    :`<section class="lead enter"><p class="eyebrow">Programa completo</p><h2>Completó los ${M.length} módulos</h2><p class="note">Los módulos volverán a aparecer para repaso según su calendario.</p></section>`;
+  return lead+LEVELS.map(L=>{const open=unlocked(S,L.n),ms=M.filter(m=>m.lv===L.n),ok=ms.filter(m=>okOf(S,m.id)).length;
+    return `<section class="card enter"><div class="card-h"><div><p class="eyebrow">Nivel ${L.n}</p><h2>${L.t}</h2></div>
+      <span class="pill ${open?(ok===ms.length?"ok":"c2"):""}">${open?`${ok} de ${ms.length} completados`:"Bloqueado · requiere 4 de 5 del nivel anterior"}</span></div>
+      <div class="mods"><div class="mod hd"><span>#</span><span>Módulo</span><span class="cp">Competencia</span><span class="st">Estado</span><span class="sc">Puntaje</span><span class="ac"></span></div>
+      ${ms.map(m=>{const st=open?statusOf(m):"lock",r=S.res[m.id],n=M.indexOf(m)+1,isCur=nx&&nx.id===m.id;
+        const pill=st==="ok"?`<span class="pill ok">Completado</span>`:st==="rep"?`<span class="pill warn">Repasar</span>`:st==="lock"?`<span class="pill">Bloqueado</span>`:`<span class="pill c2">Pendiente</span>`;
+        return `<div class="mod ${open?"":"locked"} ${isCur?"cur":""}"><span class="num">${String(n).padStart(2,"0")}</span>
+          <span class="t"><b>${esc(m.t)}</b><span>${m.voz?`<span class="tag voz">voz</span>`:""}${m.mir?`<span class="tag esp">2 IAs</span>`:""}<span class="tag">${m.mir?15:10} min</span></span></span>
+          <span class="cp small muted">${COMP[m.c]}</span><span class="st">${pill}</span><span class="sc">${r?Math.round(r.score/4*100)+"%":"—"}</span>
+          <span class="ac">${open?`<button class="btn sm ${st==="new"||st==="rep"?"":"ghost"}" data-m="${m.id}">${r?"Repetir":"Iniciar"}</button>`:""}</span></div>`;}).join("")}</div></section>`;}).join("");
+}
+function vModulo(){
+  const m=M.find(x=>x.id===cur),L=LEVELS[m.lv-1];
+  const head=`<div class="crumb"><button data-tab="programa">Programa</button><span>/</span><span>Nivel ${L.n} · ${L.t}</span><span>/</span><b style="color:var(--fg)">${esc(m.t)}</b></div>
+    <div class="stepper">${STEPS.map((t,i)=>`<div class="stp ${i<step?"done":""} ${i===step?"on":""}"><i></i><span><b>${i+1}</b>${t}</span></div>`).join("")}</div>`;
+  let body="";
+  if(step===0){const o=draft.order,a=draft.quiz,ans=a!==undefined,right=ans&&o[a]==="good";
+    body=`<section class="card enter"><div class="card-h"><h2>${esc(m.t)}</h2><span class="small muted">${COMP[m.c]} · ${m.mir?15:10} min</span></div><p class="note">${esc(m.s)}</p>
+      <p class="eyebrow">Autoevaluación · ¿Cuál es el enfoque correcto?</p>
+      <div class="cmp">${o.map((x,j)=>{const g=x==="good",cls=!ans?"":g?"right":(a===j?"wrong":"");return `<button class="opt ${cls}" data-quiz="${j}" ${ans?"disabled":""}><span class="k">${"AB"[j]}</span><span>${ans?`<span class="verd">${g?"Correcto":"Incorrecto"}</span>`:""}${esc(g?m.good:m.bad)}</span></button>`;}).join("")}</div>
+      ${ans?`<p class="small ${right?"":"muted"}" style="color:${right?"var(--ok)":""}">${right?"Respuesta correcta.":"La opción marcada en verde es el enfoque recomendado."}</p><div class="row"><button class="btn" data-step="1">Continuar a ejecución</button></div>`:""}</section>`;}
+  else if(step===1){const need=m.mir?2:1,sel=draft.apps||[],ready=sel.length>=need,pool=m.id==="v01"||m.id==="v03"?APPS.filter(x=>x.voz):APPS;
+    body=`<section class="card enter"><h2>Ejecución</h2>
+      ${m.voz?`<p class="tip"><b>Voz:</b> ${VOZ_LINE} Antes de comenzar puede revisar su micrófono en el <button class="btn sm ghost" data-tab="voz">Laboratorio de voz</button></p>`:""}
+      <ol class="todo">
+        <li class="${draft.copied?"done":""}"><span class="n">${draft.copied?I.check:"1"}</span><div class="b"><h3>${m.voz&&m.id!=="v02"?"Lea esta instrucción en voz alta":"Copie la instrucción"}</h3>
+          <div class="prompt ${m.voz?"voz":""}" id="ptext">${esc(m.p)}</div>
+          <div class="row"><button class="btn sm ${draft.copied?"ghost":""}" data-act="copiar">${I.copy} ${draft.copied?"Copiado":"Copiar texto"}</button>${m.p.includes("[")?`<span class="small muted">Complete los campos entre [corchetes].</span>`:""}</div></div></li>
+        <li class="${ready?"done":""}"><span class="n">${ready?I.check:"2"}</span><div class="b"><h3>${m.mir?"Seleccione y abra dos IAs":"Seleccione y abra una IA"}</h3>
+          <div class="apps">${pool.map(x=>`<a class="app ${sel.includes(x.id)?"sel":""}" href="${x.u}" target="_blank" rel="noopener" data-pick="${x.id}" style="--dc:${x.c}"><span class="dt"></span>${x.n}${x.voz&&m.voz?`<span class="mic">VOZ</span>`:""}${sel.includes(x.id)?" ✓":""}</a>`).join("")}</div>
+          <p class="small muted">Se abre en otra pestaña.${m.mir?` Seleccionadas: ${sel.length} de 2.`:""}</p></div></li>
+        <li><span class="n">3</span><div class="b"><h3>${m.voz&&m.id!=="v02"?"Active el modo de voz y converse":"Pegue, envíe y lea la respuesta"}</h3>
+          <p class="small muted">${m.voz&&m.id!=="v02"?"En la app, toque el ícono de voz junto al cuadro de texto. Al terminar, vuelva a esta pestaña.":m.id==="v02"?"En el teclado del teléfono, toque el micrófono y dicte. Revise el texto antes de enviar.":"Mantenga presionado el cuadro de texto y elija «Pegar». Envíe y vuelva a esta pestaña."}</p></div></li>
+      </ol>
+      <div class="row between"><button class="btn ghost" data-step="0">Atrás</button><button class="btn" data-step="2" ${ready?"":"disabled"}>Continuar</button></div></section>`;}
+  else if(step===2){const n=m.mir?2:1;
+    body=`<section class="card enter"><h2>Comparación</h2><p class="note">${m.mir?"Pegue o resuma ambas respuestas para revisarlas lado a lado.":"Opcional: pegue o resuma la respuesta para revisarla."} Este texto no se guarda.</p>
+      <div class="${m.mir?"cmp":""}">${Array.from({length:n},(_,i)=>{const x=APPS.find(a=>a.id===(draft.apps||[])[i]);return `<div style="display:grid;gap:6px;min-width:0"><label for="resp${i}" class="small muted">${x?x.n:"Respuesta"}</label><textarea id="resp${i}">${esc((draft.resp||[])[i]||"")}</textarea></div>`;}).join("")}</div>
+      ${m.mir?`<p class="tip"><b>Criterios:</b> claridad, exactitud, información que una entregó y la otra no, y datos que deban verificarse.</p>`:""}
+      <div class="row between"><button class="btn ghost" data-step="1">Atrás</button><button class="btn" data-step="3">Continuar a evaluación</button></div></section>`;}
+  else if(step===3){const c=draft.ck||[],n=c.filter(Boolean).length;
+    body=`<section class="card enter"><div class="card-h"><h2>Evaluación</h2><span class="mono muted" id="ckn">${n} / 4</span></div><p class="note">Marque los criterios cumplidos. Con 3 o más, el módulo queda completado.</p>
+      <div class="meter4" id="meter">${[0,1,2,3].map(i=>`<i class="${i<n?"on":""}"></i>`).join("")}</div>
+      <div style="display:grid;gap:8px">${m.ck.map((t,i)=>`<button class="ck" data-ck="${i}" aria-pressed="${!!c[i]}"><span class="box">${I.check}</span><span>${esc(t)}</span></button>`).join("")}</div>
+      <div class="row between"><button class="btn ghost" data-step="2">Atrás</button><button class="btn" data-act="guardar">Registrar resultado</button></div></section>`;}
+  else{const R=last||{score:0,ok:false},nx=nextM(),pct=Math.round(R.score/4*100);
+    body=`<section class="card enter"><div class="result"><div class="ring"><svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="52" fill="none" style="stroke:var(--panel2)" stroke-width="10"/>
+      <circle class="v" cx="60" cy="60" r="52" fill="none" style="stroke:${R.ok?"var(--ok)":"var(--warn)"};--off:${326.7*(1-R.score/4)}" stroke-width="10" stroke-linecap="round"/></svg><div class="lab">${pct}%</div></div>
+      <div style="display:grid;gap:8px"><p class="eyebrow">Resultado</p><h2>${R.ok?"Módulo completado":"Módulo en repaso"}</h2>
+      <p class="note">${R.score} de 4 criterios cumplidos. ${R.ok?"Se programará un repaso en los próximos días.":"Se mostrará nuevamente mañana para repasarlo."}</p>
+      ${R.lv?`<p><span class="pill ok">Nivel ${R.lv} habilitado</span></p>`:""}</div></div>
+      <p class="tip"><b>Nota:</b> ${esc(m.tip)}</p>
+      <div class="row">${nx&&nx.id!==m.id?`<button class="btn" data-m="${nx.id}">Siguiente: ${esc(nx.t)}</button>`:""}<button class="btn ghost" data-tab="programa">Volver al programa</button></div></section>`;}
+  return head+body;
+}
+function vVoz(){
+  const act=Mic.active,dictOn=!!Dict.rec;
+  return `<div class="cards">
+    <section class="card enter"><div class="card-h"><div><p class="eyebrow">Prueba 1</p><h2>Micrófono</h2></div>${act?`<span class="small" style="display:inline-flex;gap:6px;align-items:center"><span class="rec"></span>Escuchando</span>`:""}</div>
+      <p class="note">Verifique que el micrófono capta su voz con un nivel adecuado antes de usar el modo de voz de una IA. La música zen se silencia mientras dura la prueba.</p>
+      <div class="vu" id="vu" aria-hidden="true">${Array.from({length:32},()=>"<i></i>").join("")}</div>
+      <canvas class="wave" id="wave" aria-hidden="true"></canvas>
+      <div class="readout"><span>Nivel <b id="mdb">—</b></span><span>Pico <b id="mpk">—</b></span></div>
+      <span class="pill" id="mst">${act?"":"Micrófono inactivo."}</span>
+      <div class="row"><button class="btn ${act?"ghost":""}" data-act="${act?"mic-stop":"mic-start"}">${I.mic.replace("<svg",'<svg width="15" height="15"')} ${act?"Detener prueba":"Activar micrófono"}</button></div>
+      <p class="small muted" id="mmsg">El navegador pedirá permiso para usar el micrófono. El audio no se graba ni se envía a ninguna parte.</p></section>
+    <section class="card enter"><div class="card-h"><div><p class="eyebrow">Prueba 2</p><h2>Dictado</h2></div><span class="mono muted"><span id="dwc">0</span> palabras</span></div>
+      <p class="note">Hable y el texto aparecerá abajo. Luego cópielo y péguelo en cualquier IA, incluida DeepSeek.</p>
+      <textarea id="dtx" placeholder="${SR?"Toque «Dictar» y hable.":"Este navegador no ofrece dictado. Use el micrófono del teclado del teléfono."}">${esc(draft.dict||"")}</textarea>
+      <div class="row" id="drow">${dictButtons()}</div>
+      <p class="small muted">${SR?"El reconocimiento de voz lo procesa el navegador; en algunos navegadores, el audio se envía a su proveedor para transcribirlo.":"Disponible en Chrome, Edge y Safari recientes. [Por confirmar] según versión."}</p></section>
+    </div>
+    <section class="card enter"><div class="card-h"><div><p class="eyebrow">Referencia</p><h2>IAs con conversación por voz</h2></div><span class="small muted">Verificado el 22-10-2026</span></div>
+      <div class="tw"><table><thead><tr><th>IA</th><th>Función de voz</th><th>Dónde</th><th>Estado</th><th>Fuente</th></tr></thead><tbody>
+      ${VOZ.map(v=>`<tr><td><b>${v.ia}</b></td><td>${v.f}</td><td>${v.d}</td><td><span class="pill ${v.e==="Disponible"?"ok":"warn"}">${v.e}</span></td><td><a href="${v.src}" target="_blank" rel="noopener">Ver</a></td></tr>`).join("")}
+      </tbody></table></div>
+      <p class="note">Las funciones de voz cambian con frecuencia y pueden depender del país, el plan o la versión de la app.</p></section>`;
+}
+function dictButtons(){return SR?(Dict.rec?`<button class="btn ghost" data-act="dict-stop"><span class="rec"></span> Detener dictado</button>`:`<button class="btn" data-act="dict-start">${I.mic.replace("<svg",'<svg width="15" height="15"')} Dictar</button>`)+`<button class="btn ghost" data-act="dict-copy">${I.copy} Copiar texto</button><button class="btn ghost" data-act="dict-clear">Limpiar</button>`:"";}
+function paintDict(){const r=$("#drow");if(r)r.innerHTML=dictButtons();}
+function radar(sc){const keys=Object.keys(COMP),cx=170,cy=150,R=100;
+  const pt=(i,v)=>{const a=-Math.PI/2+i*2*Math.PI/keys.length;return [cx+Math.cos(a)*R*v,cy+Math.sin(a)*R*v];};
+  const ring=v=>keys.map((_,i)=>pt(i,v).join(",")).join(" ");
+  return `<svg class="radar" viewBox="-60 0 460 300" role="img" aria-label="Radar de competencias">
+    ${[.25,.5,.75,1].map(v=>`<polygon points="${ring(v)}" fill="none" style="stroke:var(--grid)"/>`).join("")}
+    ${keys.map((_,i)=>{const [x,y]=pt(i,1);return `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" style="stroke:var(--grid)"/>`;}).join("")}
+    <polygon class="shape" points="${keys.map((k,i)=>pt(i,Math.max(sc[k],3)/100).join(",")).join(" ")}" style="fill:var(--accent-soft);stroke:var(--accent)" stroke-width="2" stroke-linejoin="round"/>
+    ${keys.map((k,i)=>{const [x,y]=pt(i,1);return `<circle cx="${x+(pt(i,Math.max(sc[k],3)/100)[0]-x)}" cy="${y+(pt(i,Math.max(sc[k],3)/100)[1]-y)}" r="3" style="fill:var(--accent)"/>`;}).join("")}
+    ${keys.map((k,i)=>{const [x,y]=pt(i,1.18);const anc=Math.abs(x-cx)<10?"middle":x>cx?"start":"end";return `<text x="${x}" y="${y+4}" text-anchor="${anc}">${COMP[k]}</text>`;}).join("")}</svg>`;}
+function vProgreso(){
+  const sc=comp(S.res),hist=M.filter(m=>S.res[m.id]).sort((a,b)=>S.res[b.id].fecha-S.res[a.id].fecha);
+  return `<div class="cards">
+    <section class="card enter"><p class="eyebrow">Competencias</p><h2>Perfil de dominio</h2>${radar(sc)}</section>
+    <section class="card enter"><p class="eyebrow">Detalle</p><h2>Avance por competencia</h2>
+      <div class="hbars">${Object.keys(COMP).map((k,i)=>`<div class="hb"><span>${COMP[k]}</span><span class="tr"><i style="width:${sc[k]}%;animation-delay:${i*60}ms"></i></span><span class="n">${sc[k]}%</span></div>`).join("")}</div>
+      <p class="eyebrow" style="margin-top:6px">Uso por IA</p>
+      <div class="hbars">${APPS.map(a=>{const n=M.filter(m=>S.res[m.id]&&(S.res[m.id].apps||[]).includes(a.id)).length;return `<div class="hb"><span>${a.n}</span><span class="tr"><i style="width:${Math.min(100,n/6*100)}%;background:${a.c}"></i></span><span class="n">${n}</span></div>`;}).join("")}</div></section>
+    </div>
+    <section class="card enter"><div class="card-h"><div><p class="eyebrow">Registro</p><h2>Historial de evaluaciones</h2></div><span class="small muted">${hist.length} registros</span></div>
+      ${hist.length?`<div class="tw"><table><thead><tr><th>Módulo</th><th>Nivel</th><th>Puntaje</th><th>Estado</th><th>IA</th><th>Intentos</th><th>Fecha</th><th></th></tr></thead><tbody>
+      ${hist.map(m=>{const r=S.res[m.id];return `<tr><td>${esc(m.t)}</td><td class="num">${m.lv}</td><td class="num">${Math.round(r.score/4*100)}%</td><td><span class="pill ${r.ok?"ok":"warn"}">${r.ok?"Completado":"Repasar"}</span></td>
+        <td>${(r.apps||[]).map(a=>(APPS.find(x=>x.id===a)||{n:a}).n).join(" + ")}</td><td class="num">${r.intentos||1}</td><td class="num">${new Date(r.fecha).toLocaleDateString("es-CL")}</td>
+        <td><span class="confirm"><button class="btn sm ghost" data-m="${m.id}">Repetir</button>${confirmUI("res:"+m.id,"Borrar","")}</span></td></tr>`;}).join("")}</tbody></table></div>`
+      :`<p class="note">Aún no hay evaluaciones registradas.</p>`}</section>
+    <section class="card enter"><p class="eyebrow">Mis datos</p><h2>Perfil</h2>
+      <div class="row"><input type="text" id="ename" maxlength="40" value="${esc(draft.ename??S.perfil.nombre)}" style="flex:1 1 220px;width:auto" aria-label="Nombre"><button class="btn sm" data-act="guardar-nombre">Guardar nombre</button></div>
+      <div class="row"><span class="small muted">Nivel de inicio:</span>${LEVELS.map(L=>`<button class="btn sm ${S.perfil.nivel===L.n?"":"ghost"}" data-nivel="${L.n}">${L.n} · ${L.t}</button>`).join("")}</div>
+      <div>${confirmUI("todo","Borrar todo mi progreso","Se eliminan nombre, resultados e historial. No se puede deshacer.")}</div></section>`;
+}
+function confirmUI(key,label,warn){if(ask!==key)return `<button class="btn sm danger" data-ask="${esc(key)}">${label}</button>`;
+  return `<span class="confirm">${warn?`<span class="small">${esc(warn)}</span>`:""}<button class="btn sm danger solid" data-do="${esc(key)}">Confirmar</button><button class="btn sm ghost" data-ask="">Cancelar</button></span>`;}
+function vRef(){
+  return `<div class="cards">
+    <section class="card enter"><p class="eyebrow">Herramientas</p><h2>Las cinco IAs del programa</h2>
+      <div class="tw"><table><thead><tr><th>IA</th><th>Empresa</th><th>Voz</th><th>Acceso</th></tr></thead><tbody>
+      ${APPS.map(a=>`<tr><td><span style="display:inline-flex;gap:8px;align-items:center"><span style="width:8px;height:8px;border-radius:50%;background:${a.c}"></span><b>${a.n}</b></span></td><td>${a.co}</td><td>${a.voz?`<span class="pill ok">Sí</span>`:`<span class="pill warn">Por confirmar</span>`}</td><td><a href="${a.u}" target="_blank" rel="noopener">Abrir</a></td></tr>`).join("")}
+      </tbody></table></div></section>
+    <section class="card enter"><p class="eyebrow">Método</p><h2>Estructura de una buena instrucción</h2>
+      <div class="tw"><table><thead><tr><th>Elemento</th><th>Qué aporta</th><th>Ejemplo</th></tr></thead><tbody>
+        <tr><td><b>Rol</b></td><td>Define el punto de vista</td><td>«Actúa como asesor de finanzas familiares»</td></tr>
+        <tr><td><b>Contexto</b></td><td>Reduce suposiciones</td><td>«Somos 4, presupuesto $60.000»</td></tr>
+        <tr><td><b>Tarea</b></td><td>Precisa el resultado</td><td>«Propón un plan para el sábado»</td></tr>
+        <tr><td><b>Formato</b></td><td>Facilita el uso</td><td>«En tabla, con horarios y costos»</td></tr>
+      </tbody></table></div></section></div>
+    <section class="card enter"><p class="eyebrow">Protección de datos</p><h2>Política de uso</h2>
+      <p class="note">No ingrese en ninguna IA claves, números de tarjeta o cuentas bancarias, documentos de identidad, datos de salud ni información de clientes, proveedores o terceros. Anonimice todo documento antes de pegarlo. La información ingresada puede ser almacenada y procesada por el proveedor de cada IA conforme a sus propias políticas de privacidad, que deben revisarse antes de su uso con fines laborales.</p></section>`;
+}
+function vEquipo(){
+  const rows=family.slice().sort((a,b)=>okCount(b)-okCount(a));
+  return `<section class="card enter"><div class="card-h"><div><p class="eyebrow">Supervisión</p><h2>Avance del equipo</h2></div><span class="small muted">Solo visible para usted</span></div>
+    ${rows.length?`<div class="tw"><table><thead><tr><th>Persona</th><th>Completados</th><th>Promedio</th><th>Voz</th><th>IAs</th><th>Más débil</th><th>Última actividad</th><th></th></tr></thead><tbody>
+    ${rows.map(p=>{const sc=comp(p.res||{}),ks=Object.keys(sc).sort((a,b)=>sc[a]-sc[b]),n=okCount(p);
+      return `<tr><td><b>${esc(p.perfil&&p.perfil.nombre||"Sin nombre")}</b></td><td class="num">${n}/${M.length}</td><td class="num">${avgOf(p)}%</td><td class="num">${vozOf(p)}/3</td><td class="num">${appsOf(p).size}/5</td>
+        <td>${n?COMP[ks[0]]:"—"}</td><td class="num">${p.actualizado?new Date(p.actualizado).toLocaleDateString("es-CL"):"—"}</td><td>${p._id===myId?`<span class="muted small">Usted</span>`:confirmUI("fam:"+p._id,"Quitar","")}</td></tr>`;}).join("")}</tbody></table></div>`
+    :`<p class="note">Aún no hay participantes registrados. Comparta esta página con su equipo.</p>`}</section>`;
+}
+function vLegal(){return `<footer class="legal"><p>Método Espejo · Programa de formación práctica. El progreso se registra con nombre, puntajes y fechas; no se almacenan las respuestas de las IAs ni el audio del micrófono.</p></footer>`;}
+
+function render(){
+  if(tab!=="voz"){if(Mic.active)Mic.stop();if(Dict.rec)Dict.stop();}
+  const r=$("#root");
+  if(!S.perfil){r.innerHTML=vHead()+vRegistro()+vLegal();return;}
+  let page=tab==="modulo"?vModulo():tab==="voz"?vVoz():tab==="progreso"?vProgreso():tab==="ref"?vRef():tab==="equipo"&&isOwner?vEquipo():(tab="programa",vPrograma());
+  r.innerHTML=vHead()+vKpis()+vTabs()+`<div class="page">${page}</div>`+vLegal();
+}
+function go(fn){fn();render();window.scrollTo({top:0,behavior:reduce?"auto":"smooth"});}
+
+/* ---------- Eventos ---------- */
+document.addEventListener("input",e=>{const id=e.target.id;
+  if(id==="rname")reg.nombre=e.target.value;
+  if(id==="ename")draft.ename=e.target.value;
+  if(id==="dtx"){draft.dict=e.target.value;Dict.final=e.target.value;}
+  if(id==="zvol")Zen.setVol(parseFloat(e.target.value));
+  if(id&&id.startsWith("resp")){draft.resp=draft.resp||[];draft.resp[+id.slice(4)]=e.target.value;}});
+document.addEventListener("change",e=>{if(e.target.name==="exp")reg.exp=+e.target.value;if(e.target.id==="rok")reg.ok=e.target.checked;});
+document.addEventListener("click",async e=>{
+  const pick=e.target.closest("a[data-pick]");
+  if(pick){const m=M.find(x=>x.id===cur);let a=draft.apps||[];const id=pick.dataset.pick;if(!a.includes(id)){a.push(id);if(a.length>(m.mir?2:1))a.shift();}draft.apps=a;setTimeout(render,60);return;}
+  const b=e.target.closest("button");if(!b||b.disabled)return;const act=b.dataset.act;
+  if(act==="tema"){const nx=isDark()?"light":"dark";document.documentElement.setAttribute("data-theme",nx);try{localStorage.setItem("ep-tema",nx);}catch(err){}render();return;}
+  if(act==="zen"){if(Zen.on)Zen.stop();else if(!Zen.start()){toast("Este navegador no permite reproducir audio.");return;}
+    const z=b.closest(".zen");if(z){z.classList.toggle("on",Zen.on);b.setAttribute("aria-pressed",String(Zen.on));b.lastChild.textContent="Música zen "+(Zen.on?"activa":"apagada");
+      let rg=z.querySelector("input");if(Zen.on&&!rg){z.insertAdjacentHTML("beforeend",`<input type="range" id="zvol" min="0" max="1" step="0.05" value="${Zen.vol}" aria-label="Volumen de la música">`);}else if(!Zen.on&&rg)rg.remove();}return;}
+  if(act==="registrar"){const n=(reg.nombre||"").trim();if(!n){toast("Ingrese su nombre.");$("#rname").focus();return;}if(reg.exp===null){toast("Seleccione su experiencia con IA.");return;}if(!reg.ok){toast("Confirme la política de protección de datos para continuar.");return;}
+    S.perfil={nombre:n,nivel:EXP[reg.exp][2],inicio:Date.now()};persist();go(()=>tab="programa");return;}
+  if(b.dataset.tab){ask=null;go(()=>tab=b.dataset.tab);return;}
+  if(b.dataset.m){const m=M.find(x=>x.id===b.dataset.m);if(!unlocked(S,m.lv)){toast("Este nivel requiere completar 4 de 5 módulos del nivel anterior.");return;}
+    cur=m.id;step=0;draft={order:Math.random()<.5?["good","bad"]:["bad","good"]};go(()=>tab="modulo");return;}
+  if(b.dataset.quiz!==undefined){draft.quiz=+b.dataset.quiz;render();return;}
+  if(b.dataset.step){go(()=>step=+b.dataset.step);return;}
+  if(act==="copiar"){const t=M.find(x=>x.id===cur).p;try{navigator.clipboard.writeText(t).then(()=>{draft.copied=true;render();toast("Texto copiado.");},()=>sel("#ptext"));}catch(err){sel("#ptext");}return;}
+  if(b.dataset.ck!==undefined){draft.ck=draft.ck||[];const i=+b.dataset.ck;draft.ck[i]=!draft.ck[i];const n=draft.ck.filter(Boolean).length;b.setAttribute("aria-pressed",String(!!draft.ck[i]));
+    document.querySelectorAll("#meter i").forEach((x,j)=>x.classList.toggle("on",j<n));const c=$("#ckn");if(c)c.textContent=n+" / 4";return;}
+  if(act==="guardar"){const before=[unlocked(S,2),unlocked(S,3)],score=(draft.ck||[]).filter(Boolean).length,ok=score>=3,prev=S.res[cur];
+    const racha=ok?((prev&&prev.ok?prev.racha||0:0)+1):0,gap=ok?[2,5,10][Math.min(racha-1,2)]:1;
+    S.res[cur]={score,ok,apps:draft.apps||[],fecha:Date.now(),intentos:(prev?prev.intentos||0:0)+1,racha,repaso:(ok&&racha>3)?0:Date.now()+gap*DAY};
+    S.dias=[...new Set([...(S.dias||[]),dayKey(Date.now())])].slice(-180);persist();
+    last={score,ok,lv:[2,3].find((l,i)=>!before[i]&&unlocked(S,l))||0};go(()=>step=4);return;}
+  if(act==="mic-start"){const err=await Mic.start();if(err){const m=$("#mmsg");if(m)m.textContent=err==="NotAllowedError"||err==="SecurityError"?"El navegador bloqueó el micrófono. En la versión de claude.ai no está disponible; ábralo en lc1733.github.io/metodo-espejo/profesional/ o revise los permisos del navegador.":err==="unsupported"?"Este navegador no permite acceder al micrófono.":"No se pudo activar el micrófono ("+err+").";if(m)m.style.color="var(--bad)";return;}
+    S.voz=S.voz||{mic:0,dict:0};S.voz.mic=(S.voz.mic||0)+1;persist();
+    b.dataset.act="mic-stop";b.className="btn ghost";b.innerHTML="Detener prueba";const h=b.closest(".card").querySelector(".card-h");if(h&&!h.querySelector(".rec"))h.insertAdjacentHTML("beforeend",`<span class="small" style="display:inline-flex;gap:6px;align-items:center"><span class="rec"></span>Escuchando</span>`);return;}
+  if(act==="mic-stop"){Mic.stop();render();return;}
+  if(act==="dict-start"){const err=Dict.start();if(err){toast(err==="unsupported"?"Este navegador no ofrece dictado.":"No se pudo iniciar el dictado.");return;}S.voz=S.voz||{mic:0,dict:0};S.voz.dict=(S.voz.dict||0)+1;persist();paintDict();return;}
+  if(act==="dict-stop"){Dict.stop();return;}
+  if(act==="dict-copy"){const t=($("#dtx")||{}).value||"";if(!t.trim()){toast("No hay texto para copiar.");return;}try{navigator.clipboard.writeText(t).then(()=>toast("Texto copiado. Péguelo en la IA."),()=>sel("#dtx"));}catch(err){sel("#dtx");}return;}
+  if(act==="dict-clear"){draft.dict="";Dict.final="";const t=$("#dtx");if(t)t.value="";const w=$("#dwc");if(w)w.textContent="0";return;}
+  if(b.dataset.ask!==undefined){ask=b.dataset.ask||null;render();return;}
+  if(b.dataset.do){const k=b.dataset.do;ask=null;
+    if(k==="todo"){S={perfil:null,res:{},dias:[],voz:{mic:0,dict:0},actualizado:0};draft={};reg={exp:null,ok:false,nombre:""};try{localStorage.removeItem(KEY);}catch(err){}
+      if(docRef){const r=docRef;saving=saving.then(()=>r.delete()).catch(()=>{});}go(()=>tab="programa");toast("Progreso eliminado.");return;}
+    if(k.startsWith("res:")){delete S.res[k.slice(4)];persist();render();toast("Registro eliminado.");return;}
+    if(k.startsWith("fam:")&&dbRef){dbRef.collection("progreso").doc(k.slice(4)).delete().then(()=>toast("Participante quitado."),()=>toast("No se pudo quitar. Intente de nuevo."));render();return;}
+    render();return;}
+  if(b.dataset.nivel){S.perfil.nivel=+b.dataset.nivel;persist();render();toast("Nivel actualizado.");return;}
+  if(act==="guardar-nombre"){const n=(draft.ename??S.perfil.nombre).trim();if(!n){toast("El nombre no puede quedar vacío.");return;}S.perfil.nombre=n;delete draft.ename;persist();render();toast("Nombre guardado.");return;}
+});
+function sel(q){const el=$(q);if(!el)return;if(el.select){el.select();}else{const r=document.createRange();r.selectNodeContents(el);const s=getSelection();s.removeAllRanges();s.addRange(r);}toast("Texto seleccionado: cópielo con el menú.");}
+try{matchMedia("(prefers-color-scheme: light)").addEventListener("change",()=>{if(!document.documentElement.hasAttribute("data-theme"))render();});}catch(e){}
+render();
+
+/* ---------- Registro compartido (solo en claude.ai) ---------- */
+(async()=>{
+  if(!window.claude||!window.claude.use)return;
+  const [user,db]=await Promise.all([claude.use("user"),claude.use("db")]);if(!user||!db)return;
+  try{isOwner=await user.isOwner();const uid=await user.id();myId=uid;dbRef=db;docRef=db.collection("progreso").doc(uid);const snap=await docRef.get();
+    if(snap.exists){const d=snap.data();if((d.actualizado||0)>=(S.actualizado||0)){S=Object.assign({perfil:null,res:{},dias:[],voz:{mic:0,dict:0},actualizado:0},JSON.parse(JSON.stringify(d)));try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}else persist();mode="compartido";}
+    else if(S.perfil)persist();
+    if(isOwner)db.collection("progreso").onSnapshot(qs=>{family=qs.docs.filter(d=>d.exists).map(d=>Object.assign({_id:d.id},d.data()));if(tab==="equipo")render();},()=>{});
+    if(tab!=="voz"&&tab!=="modulo")render();
+  }catch(e){docRef=null;mode="local";}
+})();
+})();
+</script>
+
+</body>
+</html>
