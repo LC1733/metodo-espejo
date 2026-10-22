@@ -156,8 +156,12 @@ ol.todo .b{display:grid;gap:8px;min-width:0}
 textarea,input[type=text]{font:inherit;width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--fg);border-radius:8px;padding:10px 12px}
 textarea{min-height:120px;resize:vertical}
 textarea:focus,input[type=text]:focus{outline:none;border-color:var(--accent)}
-.tip{font-size:13px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
-.tip b{color:var(--accent)}
+.tip,.aviso{display:flex;gap:10px;align-items:flex-start;font-size:13px;line-height:1.5;background:color-mix(in srgb,var(--c2) 9%,transparent);border:0;border-left:3px solid var(--c2);border-radius:0 8px 8px 0;padding:10px 12px;color:var(--fg)}
+.tip{display:block;position:relative;padding-left:40px}
+.tip::before{content:"i";position:absolute;left:12px;top:11px;width:18px;height:18px;border-radius:50%;background:var(--c2);color:var(--bg);font:600 12px/18px var(--f-mono);text-align:center}
+.tip b{color:var(--c2)}
+.aviso .ico{flex:none;width:18px;height:18px;border-radius:50%;background:var(--c2);color:var(--bg);font:600 12px/18px var(--f-mono);text-align:center;margin-top:1px}
+.aviso p{margin:0} .aviso b{color:var(--c2)}
 .meter4{display:flex;gap:4px}
 .meter4 i{flex:1;height:6px;border-radius:3px;background:var(--panel2);border:1px solid var(--line)}
 .meter4 i.on{background:var(--ok);border-color:var(--ok)}
@@ -426,7 +430,7 @@ function vRegistro(){
     <label for="rname" class="small muted">Nombre</label><input type="text" id="rname" maxlength="40" value="${esc(reg.nombre)}" autocomplete="name">
     <p class="small muted">Experiencia con IA</p>
     <div class="radios">${EXP.map(([t,d],i)=>`<label class="radio"><input type="radio" name="exp" value="${i}" ${reg.exp===i?"checked":""}><span><b>${t}</b><br><span class="muted small">${d}</span></span></label>`).join("")}</div>
-    <label class="radio"><input type="checkbox" id="rok" ${reg.ok?"checked":""}><span class="small">Entiendo que no debo ingresar en ninguna IA claves, datos bancarios, documentos de identidad ni información de clientes o terceros.</span></label>
+    <div class="aviso" role="note"><span class="ico" aria-hidden="true">i</span><p><b>Protección de datos.</b> Durante el programa no ingrese en ninguna IA claves, datos bancarios, documentos de identidad ni información de clientes o terceros.</p></div>
     <div class="row"><button class="btn" data-act="registrar">Comenzar programa</button></div>
   </section>`;
 }
@@ -598,8 +602,7 @@ document.addEventListener("click",async e=>{
   if(act==="zen"){if(Zen.on)Zen.stop();else if(!Zen.start()){toast("Este navegador no permite reproducir audio.");return;}
     const z=b.closest(".zen");if(z){z.classList.toggle("on",Zen.on);b.setAttribute("aria-pressed",String(Zen.on));b.lastChild.textContent="Música zen "+(Zen.on?"activa":"apagada");
       let rg=z.querySelector("input");if(Zen.on&&!rg){z.insertAdjacentHTML("beforeend",`<input type="range" id="zvol" min="0" max="1" step="0.05" value="${Zen.vol}" aria-label="Volumen de la música">`);}else if(!Zen.on&&rg)rg.remove();}return;}
-  if(act==="registrar"){const n=(reg.nombre||"").trim();if(!n){toast("Ingrese su nombre.");$("#rname").focus();return;}if(reg.exp===null){toast("Seleccione su experiencia con IA.");return;}if(!reg.ok){toast("Confirme la política de protección de datos para continuar.");return;}
-    S.perfil={nombre:n,nivel:EXP[reg.exp][2],inicio:Date.now()};persist();go(()=>tab="programa");return;}
+  if(act==="registrar"){const n=(reg.nombre||"").trim();if(!n){toast("Ingrese su nombre.");$("#rname").focus();return;}if(reg.exp===null){toast("Seleccione su experiencia con IA.");return;}    S.perfil={nombre:n,nivel:EXP[reg.exp][2],inicio:Date.now()};persist();go(()=>tab="programa");return;}
   if(b.dataset.tab){ask=null;go(()=>tab=b.dataset.tab);return;}
   if(b.dataset.m){const m=M.find(x=>x.id===b.dataset.m);if(!unlocked(S,m.lv)){toast("Este nivel requiere completar 4 de 5 módulos del nivel anterior.");return;}
     cur=m.id;step=0;draft={order:Math.random()<.5?["good","bad"]:["bad","good"]};go(()=>tab="modulo");return;}
